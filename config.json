@@ -17,16 +17,6 @@
     "colorLabel": "Groepskleuren: zie 'Group Selector'",
     "nodeLabel": "Persoon",
   },
-"groups": {
-    "#df89ff": "relevant persoon",
-    "#c0c0c0": "vertaler",
-    "#ff5584": "werkt samen met",
-    "#00c4ff": "geen relatie gevonden",
-    "#73c000": "familielid",
-    "#ff8805": "student van",
-    "#4c463e": "student",
-    "#d3b3b0": "peetouder"
-  },
   "features": {
     "search": true,
     "groupSelectorAttribute": "attribute 2",
