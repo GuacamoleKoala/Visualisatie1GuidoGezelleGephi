@@ -29,10 +29,7 @@ jQuery.getJSON(GetQueryStringParams("config","config.json"), function(data, text
 	}
 	
 	//As soon as page is ready (and data ready) set up it
-	// 🛑 FIX 1: WRAPPING setupGUI(config) in an anonymous function
-	$(document).ready(function() {
-        setupGUI(config);
-    });
+	$(document).ready(setupGUI(config));
 });//End JSON Config load
 
 
@@ -45,29 +42,6 @@ Object.size = function(obj) {
     }
     return size;
 };
-
-// Function to decode URL characters (e.g., %20 to space)
-function decodeFilename(filename) {
-    if (!filename) return '';
-    return decodeURIComponent(filename.replace(/\+/g, ' '));
-}
-
-// Function to extract filename from the URL
-function extractFilename(link) {
-    if (!link || typeof link !== 'string') return null;
-    
-    // Find the last part of the URL after the last '/'
-    var parts = link.split('/');
-    var filename = parts[parts.length - 1];
-    
-    // Remove any query parameters (if any)
-    var queryIndex = filename.indexOf('?');
-    if (queryIndex !== -1) {
-        filename = filename.substring(0, queryIndex);
-    }
-    
-    return filename ? decodeFilename(filename) : null;
-}
 
 function initSigma(config) {
 	var data=config.data
@@ -95,8 +69,8 @@ function initSigma(config) {
     	graphProps={
         minNodeSize: 1,
         maxNodeSize: 7,
-        minEdgeSize: 1,
-        maxEdgeSize: 2
+        minEdgeSize: 0.2,
+        maxEdgeSize: 0.5
     	};
 	
 	if (config.sigma && config.sigma.mouseProperties) 
@@ -132,25 +106,7 @@ function initSigma(config) {
 		a.bind("upnodes", function (a) {
 		    nodeActive(a.content[0])
 		});
-        a.bind('clickNode', function(e) {
-          // Note: Using 'a.bind' or 'sigInst.bind' is interchangeable here since 'sigInst' = 'a'
-          // We access the attributes through e.data.node.attr.attributes
-          
-          // Assuming your image link column is named 'attribute'
-          var imageLink = e.data.node.attr.attributes.attribute; 
 
-          if (imageLink) {
-            // Open the image URL in a new tab
-            window.open(imageLink, '_blank');
-          }
-        });
-
-a.bind('overNode', function(e) {
-          // **Action:** Updates the HTML panel next to the graph
-          // This code is now outdated for your current structure, it's better to rely on the nodeActive panel.
-          // I've removed the specific 'node-info' update to prevent errors if that ID is missing.
-        });
-   
 		a.draw();
 		configSigmaElements(config);
 	}
@@ -193,45 +149,29 @@ function setupGUI(config) {
 
 	// Legend
 
-    // Node
-    if (config.legend.nodeLabel) {
-        $(".node").next().html(config.legend.nodeLabel);
-    } else {
-        //verberg node link
-        $(".node").hide();
-    }
-    // Edge
-    if (config.legend.edgeLabel) {
-        $(".edge").next().html(config.legend.edgeLabel);
-    } else {
-        //verberg edge link
-        $(".edge").hide();
-    }
-    
-    // --- START LOGICA VOOR CUSTOM KLEUREN LEGEND (NIEUW) ---
-    // Colours
-    if (config.legend.colorLabel) {
-        $(".colours").next().html(config.legend.colorLabel);
-        
-        // Genereer de HTML voor de kleuren uit de "color" array
-        if (config.legend.color && config.legend.color.length > 0) {
-            var colorLegendHtml = '';
-            for (var i = 0; i < config.legend.color.length; i++) {
-                var item = config.legend.color[i];
-                // Dit creëert het gekleurde blokje en de tekst
-                colorLegendHtml += '<div style="line-height:12px"><div style="width:12px;height:12px;border:1px solid #fff;background:' + item.color + ';display:inline-block; margin-right: 5px;"></div> ' + item.text + '</div>';
-            }
-            // Voeg de gegenereerde HTML toe aan het kleurenblok
-            $(".colours").append(colorLegendHtml);
-        }
-        
-    } else {
-        //verberg de kleuren legende als er geen label is
-        $(".colours").hide();
-    }
-    // --- EINDE LOGICA VOOR CUSTOM KLEUREN LEGEND ---
+	// Node
+	if (config.legend.nodeLabel) {
+		$(".node").next().html(config.legend.nodeLabel);
+	} else {
+		//hide more information link
+		$(".node").hide();
+	}
+	// Edge
+	if (config.legend.edgeLabel) {
+		$(".edge").next().html(config.legend.edgeLabel);
+	} else {
+		//hide more information link
+		$(".edge").hide();
+	}
+	// Colours
+	if (config.legend.nodeLabel) {
+		$(".colours").next().html(config.legend.colorLabel);
+	} else {
+		//hide more information link
+		$(".colours").hide();
+	}
 
-    $GP = {
+	$GP = {
 		calculating: !1,
 		showgroup: !1
 	};
@@ -335,26 +275,11 @@ function configSigmaElements(config) {
     }
     $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
-   var a = [],
-        b,
-        x = 1;
-    var groupMap = config.groups || {}; 
-
-    for (b in sigInst.clusters) {
-        // Haal de aangepaste naam op via de kleur (b)
-        var groupInfo = groupMap[b];
-        
-        // Gebruik de aangepaste naam als deze bestaat, anders de standaard 'Group X'
-        var groupName = (groupInfo && groupInfo.name) ? groupInfo.name : 'Group ' + (x++);
-        
-        // Gebruik de kleur uit de config als deze is opgegeven, anders de originele clusterkleur
-        var displayColor = (groupInfo && groupInfo.color) ? groupInfo.color : b; 
-
-        a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + displayColor + ';display:inline-block"></div> ' + groupName + ' (' + sigInst.clusters[b].length + ' members)</a></div>');
-    }
-
-//a.sort();
-$GP.cluster.content(a.join(""));
+    var a = [],
+        b,x=1;
+		for (b in sigInst.clusters) a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> Group ' + (x++) + ' (' + sigInst.clusters[b].length + ' members)</a></div>');
+    //a.sort();
+    $GP.cluster.content(a.join(""));
     b = {
         minWidth: 400,
         maxWidth: 800,
@@ -603,7 +528,7 @@ function nodeActive(a) {
 
 	if (groupByDirection) {
 		size=Object.size(mutual);
-		f.push("<h2>Mutual (" + size + ")</h2>");
+		f.push("<h2>Mututal (" + size + ")</h2>");
 		(size>0)? f=f.concat(createList(mutual)) : f.push("No mutual links<br>");
 		size=Object.size(incoming);
 		f.push("<h2>Incoming (" + size + ")</h2>");
@@ -626,65 +551,38 @@ function nodeActive(a) {
         var a = $(this),
             b = a.attr("rel");
     });
-    f = b.attr;
-    if (f.attributes) {
-          var image_attribute = false;
-          if (config.informationPanel.imageAttribute) {
-              image_attribute=config.informationPanel.imageAttribute;
-          }
-        e = [];
-        temp_array = [];
-        g = 0;
+    if (f.attributes) {
+        // Wij gebruiken nu 'attribute 2' vast, de imageAttribute setting in config.json is hier NIET RELEVANT.
+        var image_attribute_name = "attribute 2";
+        var imageUrl = f.attributes[image_attribute_name]; // Haal de waarde van 'attribute 2' op
 
-        // --- IMAGE HANDLING VARIABLES ---
-        var imageUrl = null;
-        var imageHtml = '';
-        // --------------------------------
+        e = [];
+        var imageLinkHtml = ""; // HTML om de link apart op te slaan
 
-        for (var attr in f.attributes) {
-            var d = f.attributes[attr],
-                h = "";
+        // Loop door alle attributen
+        for (var attr in f.attributes) {
+            var d = f.attributes[attr],
+                h = "";
             
-            // 💥 CHECK IF THIS IS THE IMAGE ATTRIBUTE ('attribute')
-            // Using the full URL to reliably detect the image link
-            if (attr === 'attribute' && d && typeof d === 'string' && d.startsWith('https://upload.wikimedia.org/')) {
-                // Store the URL for separate display outside this loop
-                imageUrl = d;
-                
-                // Create the display HTML for the image
-                var filename = extractFilename(d); // Requires the helper function from the previous step!
-                
-                imageHtml = '<span><strong>Image: </strong>' +
-                            '<a href="' + imageUrl + '" target="_blank">' + 
-                            '<img src="' + imageUrl + '" style="max-width: 50px; max-height: 50px; vertical-align: middle; margin-right: 5px;" alt="Node Image">' + 
-                            filename + 
-                            '</a></span><br/>';
-                
-                // Set 'h' to an empty string so the URL is NOT redundantly listed in the main attributes
-                h = ''; 
-            } else if (attr!=image_attribute) {
-                h = '<span><strong>' + attr + ':</strong> ' + d + '</span><br/>'
-            }
-
-            //temp_array.push(f.attributes[g].attr);
-            e.push(h)
-        }
-
-        // --- Append 'Image Not Available' if no image was found ---
-        if (!imageUrl) {
-            imageHtml = '<span><strong>Image: </strong> Not available</span><br/>';
+            // Toon ALLE attributen, BEHALVE 'attribute 2'
+            if (attr !== image_attribute_name) {
+                h = '<span><strong>' + attr + ':</strong> ' + d + '</span><br/>'
+            } else if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+                // Als het 'attribute 2' is EN het is een geldige URL, maak de klikbare link.
+                // We slaan deze apart op.
+                imageLinkHtml = '<p><b>Image Link:</b> <a href="' + imageUrl + '" target="_blank">' + imageUrl + '</a></p>';
+                continue; // Ga door naar het volgende attribuut
+            }
+            
+            e.push(h)
         }
-        // ---------------------------------------------------------
+
+        // Toon de naam van de node (label)
+        $GP.info_name.html("<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
         
-        if (image_attribute) {
-            // If image_attribute is configured, this code path runs
-            $GP.info_name.html("<div><img src=" + f.attributes[image_attribute] + " style=\"vertical-align:middle\" /> <span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
-        } else {
-            $GP.info_name.html("<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
-        }
-        // PREPEND our custom image HTML before the attributes
-        $GP.info_data.html(imageHtml + e.join(""))
-    }
+        // Toon eerst de Image Link (indien aanwezig), dan de overige attributen.
+        $GP.info_data.html(imageLinkHtml + e.join("<br/>"))
+    }
     $GP.info_data.show();
     $GP.info_p.html("Connections:");
     $GP.info.animate({width:'show'},350);
@@ -724,5 +622,6 @@ function showCluster(a) {
         return !0
     }
     return !1
-	}
 }
+
+

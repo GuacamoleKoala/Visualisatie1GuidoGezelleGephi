@@ -10,9 +10,9 @@
   "text": {
     "more": "",
     "intro": "This is a visualisation of the network of Guido Gezelle. \nThe graph shows people who are connected to Guido Gezelle \nand to who Guido Gezelle is connected to in Wikidata.",
-    "title": "Network of Guido Gezelle"
+    "title": "Correspondents of Guido Gezelle"
   },
-  "groups": {
+"groups": {
     "#DF89FF": { "name": "Relevant persoon", "color": "#DF89FF" },
     "#C0C0C0": { "name": "Vertaler", "color": "#C0C0C0" },
     "#FF5584": { "name": "Werkt samen met", "color": "#FF5584" },
@@ -23,9 +23,9 @@
     "#D3B3B0": { "name": "Peetouder", "color": "#D3B3B0" }
   },
   "legend": {
-    "edgeLabel": "Relatie",
-    "colorLabel": "Groepskleuren: zie 'Group Selector'",
-    "nodeLabel": "Persoon"
+    "edgeLabel": "Relationship",
+    "colorLabel": "Zie Group Selector",
+    "nodeLabel": "Person"
   },
   "features": {
     "search": true,
