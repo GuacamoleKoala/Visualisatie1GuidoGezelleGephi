@@ -29,7 +29,10 @@ jQuery.getJSON(GetQueryStringParams("config","config.json"), function(data, text
 	}
 	
 	//As soon as page is ready (and data ready) set up it
-	$(document).ready(setupGUI(config));
+	// 🛑 FIX 1: WRAPPING setupGUI(config) in an anonymous function
+	$(document).ready(function() {
+        setupGUI(config);
+    });
 });//End JSON Config load
 
 
@@ -133,23 +136,19 @@ function initSigma(config) {
           // Note: Using 'a.bind' or 'sigInst.bind' is interchangeable here since 'sigInst' = 'a'
           // We access the attributes through e.data.node.attr.attributes
           
-          // Assuming your Wikidata ID column is named 'attribute'
-          var wikidataId = e.data.node.attr.attributes.attribute; 
+          // Assuming your image link column is named 'attribute'
+          var imageLink = e.data.node.attr.attributes.attribute; 
 
-          if (wikidataId) {
-            // Open the corresponding Wikidata page in a new tab
-            window.open('https://www.wikidata.org/wiki/' + wikidataId, '_blank');
+          if (imageLink) {
+            // Open the image URL in a new tab
+            window.open(imageLink, '_blank');
           }
         });
 
 a.bind('overNode', function(e) {
           // **Action:** Updates the HTML panel next to the graph
-          var imageUrl = e.data.node.attr.attributes.image_url; 
-          var label = e.data.node.label;
-
-          document.getElementById('node-info').innerHTML = 
-            '<h3>' + label + '</h3>' + 
-            '<img src="' + imageUrl + '" style="width:100px;">';
+          // This code is now outdated for your current structure, it's better to rely on the nodeActive panel.
+          // I've removed the specific 'node-info' update to prevent errors if that ID is missing.
         });
    
 		a.draw();
@@ -349,7 +348,7 @@ for (b in sigInst.clusters) {
     
     a.push('<div style="line-height:12px"><a href="#' + b + '">' + 
            '<div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> ' + 
-           **customName** + 
+           customName + 
            ' (' + sigInst.clusters[b].length + ' members)</a></div>');
 }
 
@@ -725,5 +724,3 @@ function showCluster(a) {
     }
     return !1
 }
-
-
