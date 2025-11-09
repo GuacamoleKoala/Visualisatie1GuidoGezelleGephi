@@ -575,48 +575,53 @@ function nodeActive(a) {
     // 1. Zoek de groepsnaam op basis van de node-kleur (b.color)
     var groupName = "";
     var groupMap = config.groups || {};
-    // b.color bevat de hex-code (bijv. #DF89FF) die overeenkomt met een groep uit config.json
     if (groupMap[b.color] && groupMap[b.color].name) {
         groupName = groupMap[b.color].name;
     }
 
     if (f.attributes) {
-        // Wij gebruiken 'attribute 2' vast voor de link.
-        var image_attribute_name = "attribute 2";
-        var imageUrl = f.attributes[image_attribute_name]; // Haal de waarde van 'attribute 2' op
+        // Definieer de namen van de speciale attributen:
+        var group_link_attribute_name = "attribute 2"; // Link 1: Meestal gebruikt voor Group Selector
+        var wikidata_image_attribute_name = "attribute"; // Link 2: De nieuwe Wikidata Image link
 
-        e = [];
-        var imageLinkHtml = ""; // HTML om de link apart op te slaan
+        var groupLinkUrl = f.attributes[group_link_attribute_name];
+        var wikidataImageUrl = f.attributes[wikidata_image_attribute_name];
 
-        // Loop door alle attributen
+        e = []; // Array voor de overige attributen
+        var specialLinksHtml = ""; // HTML voor de speciale links (attribute 2 & attribute)
+
+        // 1. Verwerk 'attribute 2' als klikbare link
+        if (groupLinkUrl && (groupLinkUrl.startsWith('http://') || groupLinkUrl.startsWith('https://'))) {
+            specialLinksHtml += '<p><b>Group Link:</b> <a href="' + groupLinkUrl + '" target="_blank">' + groupLinkUrl + '</a></p>';
+        }
+
+        // 2. Verwerk 'attribute' als klikbare Wikidata Image Source link
+        if (wikidataImageUrl && (wikidataImageUrl.startsWith('http://') || wikidataImageUrl.startsWith('https://'))) {
+            specialLinksHtml += '<p><b>Wikidata Image Source:</b> <a href="' + wikidataImageUrl + '" target="_blank">' + wikidataImageUrl + '</a></p>';
+        }
+        
+        // Loop door alle attributen om de REST van de data te tonen
         for (var attr in f.attributes) {
             var d = f.attributes[attr],
                 h = "";
-            
-            // Toon ALLE attributen, BEHALVE 'attribute 2'
-            if (attr !== image_attribute_name) {
-                h = '<span><strong>' + attr + ':</strong> ' + d + '</span><br/>'
-            } else if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-                // Als het 'attribute 2' is EN het is een geldige URL, maak de klikbare link.
-                imageLinkHtml = '<p><b>Image Link:</b> <a href="' + imageUrl + '" target="_blank">' + imageUrl + '</a></p>';
-                continue; // Ga door naar het volgende attribuut zodat deze niet als regulier attribuut wordt getoond
-            }
-            
-            e.push(h)
-        }
 
-        // 2. Toon de naam van de node (label) EN de Groepsnaam
-        // Maak de titel (Node Label)
+            // Toon ALLE attributen, BEHALVE de twee speciale (attribute 2 EN attribute)
+            if (attr !== group_link_attribute_name && attr !== wikidata_image_attribute_name) {
+                h = '<span><strong>' + attr + ':</strong> ' + d + '</span><br/>'
+                e.push(h)
+            }
+        }
+        
+        // 3. Toon de naam van de node (label) EN de Groepsnaam
         var nameHtml = "<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>";
         
-        // Voeg de groep (bijv. 'Relevant persoon') toe als subkop
-        if (groupName) {
+        if (groupName) { 
             nameHtml += "<p style='margin-top: 5px; font-weight: bold; color: " + b.color + ";'>" + groupName + "</p>";
         }
         $GP.info_name.html(nameHtml);
 
-        // Toon eerst de Image Link (indien aanwezig), dan de overige attributen.
-        $GP.info_data.html(imageLinkHtml + e.join("<br/>"))
+        // 4. Toon de Speciale Links (indien aanwezig), dan de overige attributen.
+        $GP.info_data.html(specialLinksHtml + e.join("<br/>"))
     }
     $GP.info_data.show();
     $GP.info_p.html("Connections:");
