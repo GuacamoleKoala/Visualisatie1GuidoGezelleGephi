@@ -9,13 +9,13 @@
   },
   "text": {
     "more": "",
-    "intro": "This is a visualisation of the network of Guido Gezelle. \nThe graph shows people who are connected to Guido Gezelle \nand to who Guido Gezelle is connected to in Wikidata.",
+    "intro": "This is a visualisation of the network of Guido Gezelle. The graph shows people who are connected to Guido Gezelle and to who Guido Gezelle is connected to in Wikidata.",
     "title": "Network of Guido Gezelle"
   },
   "legend": {
     "edgeLabel": "Relatie",
     "colorLabel": "Groepskleuren: zie 'Group Selector'",
-    "nodeLabel": "Persoon",
+    "nodeLabel": "Persoon"
   },
   "features": {
     "search": true,
