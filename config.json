@@ -9,8 +9,18 @@
   },
   "text": {
     "more": "",
-    "intro": "This is a visualisation of the network of Guido Gezelle. The graph shows people who are connected to Guido Gezelle and to who Guido Gezelle is connected to in Wikidata.",
+    "intro": "This is a visualisation of the network of Guido Gezelle. \nThe graph shows people who are connected to Guido Gezelle \nand to who Guido Gezelle is connected to in Wikidata.",
     "title": "Network of Guido Gezelle"
+  },
+  "groups": {
+    "#DF89FF": { "name": "Relevant persoon", "color": "#DF89FF" },
+    "#C0C0C0": { "name": "Vertaler", "color": "#C0C0C0" },
+    "#FF5584": { "name": "Werkt samen met", "color": "#FF5584" },
+    "#00C4FF": { "name": "Geen relatie gevonden", "color": "#00C4FF" },
+    "#73C000": { "name": "Familielid", "color": "#73C000" },
+    "#FF8805": { "name": "Student van", "color": "#FF8805" },
+    "#4C463E": { "name": "Student", "color": "#4C463E" },
+    "#D3B3B0": { "name": "Peetouder", "color": "#D3B3B0" }
   },
   "legend": {
     "edgeLabel": "Relatie",
@@ -40,8 +50,8 @@
       "defaultLabelSize": 14
     },
     "graphProperties": {
-      "maxEdgeSize": 0.5,
-      "minEdgeSize": 0.2,
+      "maxEdgeSize": 2,
+      "minEdgeSize": 1,
       "minNodeSize": 1,
       "maxNodeSize": 7
     },

@@ -335,22 +335,23 @@ function configSigmaElements(config) {
     }
     $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
-    var a = [],
-    b,
-    x = 1;
+   var a = [],
+        b,
+        x = 1;
+    var groupMap = config.groups || {}; 
 
-// Get the custom group name map from config.json
-var groupMap = config.groups || {}; 
+    for (b in sigInst.clusters) {
+        // Haal de aangepaste naam op via de kleur (b)
+        var groupInfo = groupMap[b];
+        
+        // Gebruik de aangepaste naam als deze bestaat, anders de standaard 'Group X'
+        var groupName = (groupInfo && groupInfo.name) ? groupInfo.name : 'Group ' + (x++);
+        
+        // Gebruik de kleur uit de config als deze is opgegeven, anders de originele clusterkleur
+        var displayColor = (groupInfo && groupInfo.color) ? groupInfo.color : b; 
 
-for (b in sigInst.clusters) {
-    // Look up the custom name using the color (b) as the key, falling back to "Group X"
-    var customName = groupMap[b] || ('Group ' + (x++)); 
-    
-    a.push('<div style="line-height:12px"><a href="#' + b + '">' + 
-           '<div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> ' + 
-           customName + 
-           ' (' + sigInst.clusters[b].length + ' members)</a></div>');
-}
+        a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + displayColor + ';display:inline-block"></div> ' + groupName + ' (' + sigInst.clusters[b].length + ' members)</a></div>');
+    }
 
 //a.sort();
 $GP.cluster.content(a.join(""));
