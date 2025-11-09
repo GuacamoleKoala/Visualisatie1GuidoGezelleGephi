@@ -273,11 +273,30 @@ function configSigmaElements(config) {
 		});
 
     }
-    $GP.bg = $(sigInst._core.domElements.bg);
+  $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
+    
+    // START: Aangepaste Groepsselector Logica
     var a = [],
-        b,x=1;
-		for (b in sigInst.clusters) a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> Group ' + (x++) + ' (' + sigInst.clusters[b].length + ' members)</a></div>');
+        b,
+        x = 1;
+    // Lees de groepconfiguratie uit config.json
+    var groupMap = config.groups || {}; 
+
+    for (b in sigInst.clusters) {
+        // Haal de aangepaste naam en kleur op via de kleur (b)
+        var groupInfo = groupMap[b];
+        
+        // Gebruik de aangepaste naam als deze bestaat, anders de standaard 'Group X'
+        var groupName = (groupInfo && groupInfo.name) ? groupInfo.name : 'Group ' + (x++);
+        
+        // Gebruik de kleur uit de config als deze is opgegeven, anders de originele clusterkleur
+        var displayColor = (groupInfo && groupInfo.color) ? groupInfo.color : b; 
+
+        a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + displayColor + ';display:inline-block"></div> ' + groupName + ' (' + sigInst.clusters[b].length + ' members)</a></div>');
+    }
+    // END: Aangepaste Groepsselector Logica
+
     //a.sort();
     $GP.cluster.content(a.join(""));
     b = {
@@ -551,8 +570,18 @@ function nodeActive(a) {
         var a = $(this),
             b = a.attr("rel");
     });
+    f = b.attr;
+    
+    // 1. Zoek de groepsnaam op basis van de node-kleur (b.color)
+    var groupName = "";
+    var groupMap = config.groups || {};
+    // b.color bevat de hex-code (bijv. #DF89FF) die overeenkomt met een groep uit config.json
+    if (groupMap[b.color] && groupMap[b.color].name) {
+        groupName = groupMap[b.color].name;
+    }
+
     if (f.attributes) {
-        // Wij gebruiken nu 'attribute 2' vast, de imageAttribute setting in config.json is hier NIET RELEVANT.
+        // Wij gebruiken 'attribute 2' vast voor de link.
         var image_attribute_name = "attribute 2";
         var imageUrl = f.attributes[image_attribute_name]; // Haal de waarde van 'attribute 2' op
 
@@ -569,17 +598,23 @@ function nodeActive(a) {
                 h = '<span><strong>' + attr + ':</strong> ' + d + '</span><br/>'
             } else if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
                 // Als het 'attribute 2' is EN het is een geldige URL, maak de klikbare link.
-                // We slaan deze apart op.
                 imageLinkHtml = '<p><b>Image Link:</b> <a href="' + imageUrl + '" target="_blank">' + imageUrl + '</a></p>';
-                continue; // Ga door naar het volgende attribuut
+                continue; // Ga door naar het volgende attribuut zodat deze niet als regulier attribuut wordt getoond
             }
             
             e.push(h)
         }
 
-        // Toon de naam van de node (label)
-        $GP.info_name.html("<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
+        // 2. Toon de naam van de node (label) EN de Groepsnaam
+        // Maak de titel (Node Label)
+        var nameHtml = "<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>";
         
+        // Voeg de groep (bijv. 'Relevant persoon') toe als subkop
+        if (groupName) {
+            nameHtml += "<p style='margin-top: 5px; font-weight: bold; color: " + b.color + ";'>" + groupName + "</p>";
+        }
+        $GP.info_name.html(nameHtml);
+
         // Toon eerst de Image Link (indien aanwezig), dan de overige attributen.
         $GP.info_data.html(imageLinkHtml + e.join("<br/>"))
     }
