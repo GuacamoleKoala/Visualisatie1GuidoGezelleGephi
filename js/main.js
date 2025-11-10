@@ -93,10 +93,6 @@ function initSigma(config) {
 
 		a.iterNodes(
 			function (b) { //This is where we populate the array used for the group select box
-
-				// note: index may not be consistent for all nodes. Should calculate each time. 
-				 // alert(JSON.stringify(b.attr.attributes[5].val));
-				// alert(b.x);
 				a.clusters[b.color] || (a.clusters[b.color] = []);
 				a.clusters[b.color].push(b.id);//SAH: push id not label
 			}
@@ -164,7 +160,7 @@ function setupGUI(config) {
 		$(".edge").hide();
 	}
 	// Colours
-	if (config.legend.nodeLabel) {
+	if (config.legend.colorLabel) {
 		$(".colours").next().html(config.legend.colorLabel);
 	} else {
 		//hide more information link
@@ -201,21 +197,51 @@ function setupGUI(config) {
     initSigma(config);
 }
 
+// *** START FIX: HELPER FUNCTIE VOOR ATTRIBUUTWAARDE (ROBUUST) ***
+// Deze functie leest de attributen (MET SPATIES) correct uit de data.json structuur.
+function getAttributeValue(node, key) {
+    
+    // 1. Probeer de ruwe JSON-structuur (uit data.json): node.attributes["attribute 1"]
+    if (node.attributes && (typeof node.attributes[key] !== 'undefined')) {
+        return node.attributes[key];
+    }
+    
+    // 2. Probeer de GEXF/default parser structuur (node.attr.attributes)
+    // Dit is hoe de parser de 'data.json' attributen intern opslaat.
+    if (node.attr && node.attr.attributes && (typeof node.attr.attributes[key] !== 'undefined')) {
+         return node.attr.attributes[key];
+    }
+    
+    // 3. Fallback: als het 'type' attribuut direct op de node zit
+    if (node[key]) {
+        return node[key];
+    }
+    
+    return null;
+}
+// *** EINDE FIX: HELPER FUNCTIE ***
+
+
+// *** START FIX: FUNCTIE OM GROEPSNAAM OP TE HALEN (GEBRUIKT "type") ***
 function getGroupName(clusterKey) {
     var nodes = sigInst.clusters[clusterKey];
     if (nodes && nodes.length > 0) {
         var firstNodeId = nodes[0];
         var node = sigInst._core.graph.nodesIndex[firstNodeId];
-        if (node.type) {
-             return node.type;
+
+        // Gebruik de robuuste methode om de waarde van het "type" attribuut op te halen
+        // Dit negeert de foute "attribute 2" instelling in config.json
+        var groupName = getAttributeValue(node, "type");
+
+        if (groupName) {
+             return groupName;
         }
-        // ----------------------------------
-        
-      
-        return "Onbekende Groep"; 
     }
-    return "Geen Leden";
+    // Fallback
+    return "Onbekende Groep"; 
 }
+// *** EINDE FIX: GROEPSNAAM ***
+
 
 function configSigmaElements(config) {
 	$GP=config.GP;
@@ -291,7 +317,9 @@ function configSigmaElements(config) {
     }
     $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
-   var a = [],
+   
+    // *** START FIX: GROEPSSELECTIE GEBRUIKT getGroupName ***
+    var a = [],
         b,x=1;
     for (b in sigInst.clusters) {
         // Haal de beschrijvende naam op
@@ -299,6 +327,7 @@ function configSigmaElements(config) {
         
         a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> ' + groupDisplayName + ' (' + sigInst.clusters[b].length + ' leden)</a></div>');
     }
+    // *** EINDE FIX: GROEPSSELECTIE ***
     
     //a.sort();
     $GP.cluster.content(a.join(""));
@@ -456,6 +485,7 @@ function nodeNormal() {
     }), sigInst.draw(2, 2, 2, 2), sigInst.neighbors = {}, sigInst.active = !1, $GP.calculating = !1, window.location.hash = "")
 }
 
+
 function nodeActive(a) {
 
 	var groupByDirection=false;
@@ -463,7 +493,7 @@ function nodeActive(a) {
 	
     sigInst.neighbors = {};
     sigInst.detail = !0;
-    var b = sigInst._core.graph.nodesIndex[a];
+    var b = sigInst._core.graph.nodesIndex[a]; // 'b' is de geselecteerde node
     showGroups(!1);
 	var outgoing={},incoming={},mutual={};//SAH
     sigInst.iterEdges(function (b) {
@@ -535,18 +565,9 @@ function nodeActive(a) {
 		return f;
 	}
 	
-	/*console.log("mutual:");
-	console.log(mutual);
-	console.log("incoming:");
-	console.log(incoming);
-	console.log("outgoing:");
-	console.log(outgoing);*/
-	
 	
 	var f=[];
 	
-	//console.log("neighbors:");
-	//console.log(sigInst.neighbors);
 
 	if (groupByDirection) {
 		size=Object.size(mutual);
@@ -573,49 +594,51 @@ function nodeActive(a) {
         var a = $(this),
             b = a.attr("rel");
     });
-    f = b.attr; 
+    
+    // *** START WERKEND BLOK VOOR ATTRIBUTEN/LINKS (GEFIXED) ***
+    
+    // Attribuut sleutel uit config ophalen
+    var imageAttributeKey = config.informationPanel.imageAttribute || "attribute 4"; // "attribute 4"
 
-    // 1. Haal de node Type op (dit is nu de bron voor de Group Selector en het paneel)
-    var nodeType = b.type;
-
-    // 2. Definieer de attributen en hun display labels
-    // BELANGRIJK: ZORG DAT DE KEY LINKS (b.v. 'attribute1') OVEREENKOMT MET UW data.json
+    // 1. Definieer de attributen en hun display labels (MET SPATIES)
     var linkAttributes = {
-        // Gebruik kleine letters, zonder spaties, als dit de opmaak in data.json is!
-        // Als uw JSON 'Attribute 1' (met hoofdletter en spatie) gebruikt, verander de keys dan terug!
-        "attribute1": "Wikidata Item Link",
-        "attribute2": "Wikipedia Link", 
-        "attribute3": "Commons Link",
-        "attribute4": "Image Source Link", 
-        "attribute5": "Wikisource Link"
+        "attribute 1": "Wikidata:",
+        "attribute 2": "Wikipedia:", 
+        "attribute 3": "Commons:", 
+        "attribute 4": "Image Source:", // Voeg image source ook toe aan de lijst
+        "attribute 5": "VIAF Link:"
     };
-    // Gebruik de imageAttribute uit de config.json
-    var imageAttributeKey = config.informationPanel.imageAttribute || "attribute4"; 
 
     var specialLinksHtml = ""; // HTML voor alle links
-    var imageUrl = f.attributes[imageAttributeKey];
+    
+    // Haal de Image URL op
+    var imageUrl = getAttributeValue(b, imageAttributeKey); 
     
     // Loop door de attributen om de links te genereren
     for (var attrKey in linkAttributes) {
-        // Probeer de waarde uit het attributenobject op te halen
-        var urlOrValue = f.attributes[attrKey];
-        var isLink = urlOrValue && (urlOrValue.startsWith('http://') || urlOrValue.startsWith('https://'));
+        // Gebruik de robuuste functie om de waarde te vinden (attrKey is nu bijv. "attribute 1")
+        var urlOrValue = getAttributeValue(b, attrKey); 
+        var isLink = urlOrValue && (typeof urlOrValue === 'string') && (urlOrValue.startsWith('http://') || urlOrValue.startsWith('https://'));
 
         if (isLink) {
-            // Toon als klikbare link
             var label = linkAttributes[attrKey];
-            // Verkort de URL in de linktekst
-            var linkText = urlOrValue.length > 50 ? urlOrValue.substring(0, 50) + '...' : urlOrValue;
-            specialLinksHtml += '<p><b>' + label + ':</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
+            var linkText = urlOrValue.length > 60 ? urlOrValue.substring(0, 60) + '...' : urlOrValue;
+            // Gebruik <p style="margin: 8px 0;"> voor de gewenste spatie (marge)
+            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
+        } else if (urlOrValue) {
+            // Toon als normale tekst als het geen link is (voor het geval dat)
+            var label = linkAttributes[attrKey];
+            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> ' + urlOrValue + '</p>';
         }
     }
 
-    // 3. Bouw de naam/titel sectie
+    // 2. Bouw de naam/titel sectie
     var nameHtml = "";
 
-    // Voeg de Image toe (als de URL geldig is)
-    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-         nameHtml += "<div><img src=" + imageUrl + " style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
+    // Voeg de Image toe 
+    if (imageUrl && (typeof imageUrl === 'string') && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+         // Voeg een lichte marge toe aan de image container voor ruimte
+         nameHtml += "<div style='margin-bottom: 10px;'><img src=\"" + imageUrl + "\" style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
     } else {
          nameHtml += "<div>";
     }
@@ -623,15 +646,20 @@ function nodeActive(a) {
     // Voeg de Node Label toe
     nameHtml += "<span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>";
 
-    // Voeg de Node Type toe (uit de Type kolom, zichtbaar onder de naam)
+    // Haal de Node Type op uit het attribuut "type"
+    var nodeType = getAttributeValue(b, "type");
+
+    // Voeg de Node Type toe 
     if (nodeType) {
         nameHtml += "<p style='margin-top: 5px;'><b>Type:</b> " + nodeType + "</p>";
     }
 
     $GP.info_name.html(nameHtml);
 
-    // 4. Toon de links in de data sectie
+    // 3. Toon de links in de data sectie
     $GP.info_data.html(specialLinksHtml);
+    // *** EINDE WERKEND BLOK VOOR ATTRIBUTEN/LINKS ***
+    
     $GP.info_data.show();
     $GP.info_p.html("Connections:");
     $GP.info.animate({width:'show'},350);
@@ -661,7 +689,9 @@ function showCluster(a) {
         }
         sigInst.clusters[a] = e;
         sigInst.draw(2, 2, 2, 2);
-        $GP.info_name.html("<b>" + a + "</b>");
+        // FIX: Toont de echte groepsnaam
+        $GP.info_name.html("<b>" + getGroupName(a) + "</b>");
+        // EINDE FIX
         $GP.info_data.hide();
         $GP.info_p.html("Group Members:");
         $GP.info_link.find("ul").html(f.join(""));
@@ -672,5 +702,3 @@ function showCluster(a) {
     }
     return !1
 }
-
-
