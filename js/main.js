@@ -200,19 +200,21 @@ function setupGUI(config) {
     config.GP=$GP;
     initSigma(config);
 }
-
-
+// Functie om de beschrijvende groepsnaam op te halen uit de 'groupSelectorAttribute' (i.e. attribute 2)
 function getGroupName(clusterKey) {
     var nodes = sigInst.clusters[clusterKey];
     if (nodes && nodes.length > 0) {
         var firstNodeId = nodes[0];
         var node = sigInst._core.graph.nodesIndex[firstNodeId];
-         
+        
+        // Haal de attribuutnaam op uit config.json (dit is "attribute 2")
         var groupAttributeName = config.features.groupSelectorAttribute; 
         
+        // Geef de waarde van dat attribuut terug
         if (node.attr.attributes[groupAttributeName]) {
              return node.attr.attributes[groupAttributeName];
         }
+        // Fallback als het attribuut leeg is
         return "Onbekende Groep (Attribuut mist)"; 
     }
     return "Geen Leden";
@@ -292,7 +294,7 @@ function configSigmaElements(config) {
     }
     $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
-    var a = [],
+   var a = [],
         b,x=1;
     for (b in sigInst.clusters) {
         // Haal de beschrijvende naam op
