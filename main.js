@@ -43,6 +43,25 @@ Object.size = function(obj) {
     return size;
 };
 
+// *** START FIX: FUNCTIE OM GROEPSNAAM OP TE HALEN (GEBRUIKT "type") ***
+function getGroupName(clusterKey) {
+    var nodes = sigInst.clusters[clusterKey];
+    if (nodes && nodes.length > 0) {
+        var firstNodeId = nodes[0];
+        var node = sigInst._core.graph.nodesIndex[firstNodeId];
+
+        // Gebruik de robuuste methode om de waarde van het "type" attribuut op te halen
+        // Pad: node.attr.attributes.type
+        if (node.attr && node.attr.attributes && node.attr.attributes.type) {
+             return node.attr.attributes.type;
+        }
+    }
+    // Fallback als het attribuut "type" niet gevonden kan worden
+    return "Onbekende Groep"; 
+}
+// *** EINDE FIX: GROEPSNAAM ***
+
+
 function initSigma(config) {
 	var data=config.data
 	
@@ -190,66 +209,13 @@ function setupGUI(config) {
 		$("#search").hide();
 	}
 	if (!config.features.groupSelectorAttribute) {
-		$("#attributeselect").hide();
+		$("#attributesele
+ct").hide();
 	}
     $GP.cluster = new Cluster($GP.form.find("#attributeselect"));
     config.GP=$GP;
     initSigma(config);
 }
-
-// *** START FIX: HELPER FUNCTIE VOOR ATTRIBUUTWAARDE (ROBUUST) ***
-// Deze functie controleert de meest waarschijnlijke locaties (incl. de structuur in data.json)
-function getAttributeValue(node, key) {
-    
-    // 1. Probeer de ruwe JSON-structuur: node.attributes[key] (met spaties)
-    if (node.attributes && node.attributes[key]) {
-        return node.attributes[key];
-    }
-
-    // 2. Probeer de GEXF/default parser structuur (node.attr.attributes[key].val)
-    if (node.attr && node.attr.attributes && node.attr.attributes[key]) {
-        var attrObj = node.attr.attributes[key];
-        if (attrObj && (typeof attrObj.val !== 'undefined')) {
-             return attrObj.val;
-        }
-        return attrObj; // Fallback als het geen .val object is
-    }
-    
-    // 3. Probeer de afgeplatte Sigma.js structuur: node.attr[key]
-    if (node.attr && node.attr[key]) {
-        return node.attr[key];
-    }
-
-    // 4. Fallback: als het 'type' attribuut direct op de node zit
-    if (node[key]) {
-        return node[key];
-    }
-    
-    return null;
-}
-// *** EINDE FIX: HELPER FUNCTIE ***
-
-
-// *** START FIX: FUNCTIE OM GROEPSNAAM OP TE HALEN (GEBRUIKT "type") ***
-function getGroupName(clusterKey) {
-    // Zoek naar het semantische type ("type")
-    
-    var nodes = sigInst.clusters[clusterKey];
-    if (nodes && nodes.length > 0) {
-        var firstNodeId = nodes[0];
-        var node = sigInst._core.graph.nodesIndex[firstNodeId];
-
-        // Gebruik de robuuste methode om de waarde van het "type" attribuut op te halen
-        var groupName = getAttributeValue(node, "type");
-
-        if (groupName) {
-             return groupName;
-        }
-    }
-    // Fallback
-    return "Onbekende Groep"; 
-}
-// *** EINDE FIX: GROEPSNAAM ***
 
 
 function configSigmaElements(config) {
@@ -502,7 +468,7 @@ function nodeActive(a) {
 	
     sigInst.neighbors = {};
     sigInst.detail = !0;
-    var b = sigInst._core.graph.nodesIndex[a];
+    var b = sigInst._core.graph.nodesIndex[a]; // 'b' is de geselecteerde node
     showGroups(!1);
 	var outgoing={},incoming={},mutual={};//SAH
     sigInst.iterEdges(function (b) {
@@ -609,13 +575,13 @@ function nodeActive(a) {
     // Attribuut sleutel uit config ophalen
     var imageAttributeKey = config.informationPanel.imageAttribute || "attribute 4"; // "attribute 4"
 
-    // 1. Definieer de attributen en hun display labels (MET SPATIES)
+    // 1. Definieer de attributen en hun display labels (MET SPATIES, zoals in data.json)
     var linkAttributes = {
         "attribute 1": "Wikidata:",
         "attribute 2": "Wikipedia:", 
         "attribute 3": "Commons:", 
         "attribute 4": "Image Source:", // Voeg image source ook toe aan de lijst
-        "attribute 5": "VIAF:"
+        "attribute 5": "VIAF Link:"
     };
 
     var specialLinksHtml = ""; // HTML voor alle links
@@ -632,12 +598,12 @@ function nodeActive(a) {
         if (isLink) {
             var label = linkAttributes[attrKey];
             var linkText = urlOrValue.length > 50 ? urlOrValue.substring(0, 50) + '...' : urlOrValue;
-            // Gebruik <p style="margin: 8px 0;"> voor de gewenste spatie (marge)
-            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
+            // Gebruik <p style="margin-top: 10px;"> voor de gewenste spatie (marge)
+            specialLinksHtml += '<p style="margin-top: 10px;"><b>' + label + '</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
         } else if (urlOrValue) {
-            // Toon als normale tekst als het geen link is (voor het geval dat)
+            // Toon als normale tekst als het geen link is
             var label = linkAttributes[attrKey];
-            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> ' + urlOrValue + '</p>';
+            specialLinksHtml += '<p style="margin-top: 10px;"><b>' + label + '</b> ' + urlOrValue + '</p>';
         }
     }
 
@@ -658,7 +624,7 @@ function nodeActive(a) {
     // Haal de Node Type op uit het attribuut "type"
     var nodeType = getAttributeValue(b, "type");
 
-    // Voeg de Node Type toe 
+    // Voeg de Node Type toe (bv. "relevant persoon")
     if (nodeType) {
         nameHtml += "<p style='margin-top: 5px;'><b>Type:</b> " + nodeType + "</p>";
     }
