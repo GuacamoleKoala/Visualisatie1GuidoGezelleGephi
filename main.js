@@ -93,10 +93,6 @@ function initSigma(config) {
 
 		a.iterNodes(
 			function (b) { //This is where we populate the array used for the group select box
-
-				// note: index may not be consistent for all nodes. Should calculate each time. 
-				 // alert(JSON.stringify(b.attr.attributes[5].val));
-				// alert(b.x);
 				a.clusters[b.color] || (a.clusters[b.color] = []);
 				a.clusters[b.color].push(b.id);//SAH: push id not label
 			}
@@ -201,9 +197,42 @@ function setupGUI(config) {
     initSigma(config);
 }
 
-// *** START FIX: NIEUWE HELPER FUNCTIE VOOR GROEPSNAAM (Gebruikt "type") ***
+// *** START FIX: HELPER FUNCTIE VOOR ATTRIBUUTWAARDE (ROBUUST) ***
+// Deze functie controleert de meest waarschijnlijke locaties (incl. de structuur in data.json)
+function getAttributeValue(node, key) {
+    
+    // 1. Probeer de ruwe JSON-structuur: node.attributes[key] (met spaties)
+    if (node.attributes && node.attributes[key]) {
+        return node.attributes[key];
+    }
+
+    // 2. Probeer de GEXF/default parser structuur (node.attr.attributes[key].val)
+    if (node.attr && node.attr.attributes && node.attr.attributes[key]) {
+        var attrObj = node.attr.attributes[key];
+        if (attrObj && (typeof attrObj.val !== 'undefined')) {
+             return attrObj.val;
+        }
+        return attrObj; // Fallback als het geen .val object is
+    }
+    
+    // 3. Probeer de afgeplatte Sigma.js structuur: node.attr[key]
+    if (node.attr && node.attr[key]) {
+        return node.attr[key];
+    }
+
+    // 4. Fallback: als het 'type' attribuut direct op de node zit
+    if (node[key]) {
+        return node[key];
+    }
+    
+    return null;
+}
+// *** EINDE FIX: HELPER FUNCTIE ***
+
+
+// *** START FIX: FUNCTIE OM GROEPSNAAM OP TE HALEN (GEBRUIKT "type") ***
 function getGroupName(clusterKey) {
-    // Zoek naar het semantische type ("type") in plaats van de geconfigureerde URL ("attribute 2")
+    // Zoek naar het semantische type ("type")
     
     var nodes = sigInst.clusters[clusterKey];
     if (nodes && nodes.length > 0) {
@@ -217,10 +246,11 @@ function getGroupName(clusterKey) {
              return groupName;
         }
     }
-    // Val terug op 'Group X'
-    return "Group: " + clusterKey; 
+    // Fallback
+    return "Onbekende Groep"; 
 }
 // *** EINDE FIX: GROEPSNAAM ***
+
 
 function configSigmaElements(config) {
 	$GP=config.GP;
@@ -296,7 +326,9 @@ function configSigmaElements(config) {
     }
     $GP.bg = $(sigInst._core.domElements.bg);
     $GP.bg2 = $(sigInst._core.domElements.bg2);
-   var a = [],
+   
+    // *** START FIX: GROEPSSELECTIE GEBRUIKT getGroupName ***
+    var a = [],
         b,x=1;
     for (b in sigInst.clusters) {
         // Haal de beschrijvende naam op
@@ -304,6 +336,7 @@ function configSigmaElements(config) {
         
         a.push('<div style="line-height:12px"><a href="#' + b + '"><div style="width:40px;height:12px;border:1px solid #fff;background:' + b + ';display:inline-block"></div> ' + groupDisplayName + ' (' + sigInst.clusters[b].length + ' leden)</a></div>');
     }
+    // *** EINDE FIX: GROEPSSELECTIE ***
     
     //a.sort();
     $GP.cluster.content(a.join(""));
@@ -461,30 +494,6 @@ function nodeNormal() {
     }), sigInst.draw(2, 2, 2, 2), sigInst.neighbors = {}, sigInst.active = !1, $GP.calculating = !1, window.location.hash = "")
 }
 
-// *** START FIX: NIEUWE, MEER ROBUUSTE HELPER FUNCTIE VOOR ATTRIBUUTWAARDE ***
-// Functie om de attribuutwaarde te vinden, ongeacht de nesteling.
-function getAttributeValue(node, key) {
-    // 1. Probeer de structuur uit de user's data.json: node.attributes[key]
-    if (node.attributes && node.attributes[key]) {
-        return node.attributes[key];
-    }
-    
-    // 2. Probeer de meest voorkomende Gephi-structuur: node.attr.attributes[key] (voor het geval dit ook voorkomt)
-    if (node.attr && node.attr.attributes && node.attr.attributes[key]) {
-         return node.attr.attributes[key];
-    }
-    
-    // 3. Probeer direct op node.attr of node[key]
-    if (node.attr && node.attr[key]) {
-         return node.attr[key];
-    }
-    if (node[key]) {
-        return node[key];
-    }
-    return null;
-}
-// *** EINDE FIX: HELPER FUNCTIE ***
-
 
 function nodeActive(a) {
 
@@ -595,18 +604,18 @@ function nodeActive(a) {
             b = a.attr("rel");
     });
     
-    // *** START FIX: LOGICA VOOR ATTRIBUTEN/LINKS (GEBRUIKT SPATIES IN ATTRIBUUTNAMEN) ***
+    // *** START WERKEND BLOK VOOR ATTRIBUTEN/LINKS (GEFIXED) ***
     
-    // Attribuut sleutels uit config ophalen - GEEN SPATIES MEER VERWIJDEREN
+    // Attribuut sleutel uit config ophalen
     var imageAttributeKey = config.informationPanel.imageAttribute || "attribute 4"; // "attribute 4"
 
-    // 1. Definieer de attributen en hun display labels (gebruik de namen inclusief spaties!)
+    // 1. Definieer de attributen en hun display labels (MET SPATIES)
     var linkAttributes = {
-        "attribute 1": "Wikidata Item Link",
-        "attribute 2": "Wikipedia Link", // Dit is een link, niet de type/groep
-        "attribute 3": "Commons Link", 
-        "attribute 5": "VIAF Link"
-        // "attribute 4" wordt apart als afbeelding/image source link behandeld
+        "attribute 1": "Wikidata:",
+        "attribute 2": "Wikipedia:", 
+        "attribute 3": "Commons:", 
+        "attribute 4": "Image Source:", // Voeg image source ook toe aan de lijst
+        "attribute 5": "VIAF:"
     };
 
     var specialLinksHtml = ""; // HTML voor alle links
@@ -623,11 +632,12 @@ function nodeActive(a) {
         if (isLink) {
             var label = linkAttributes[attrKey];
             var linkText = urlOrValue.length > 50 ? urlOrValue.substring(0, 50) + '...' : urlOrValue;
-            specialLinksHtml += '<p><b>' + label + ':</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
+            // Gebruik <p style="margin: 8px 0;"> voor de gewenste spatie (marge)
+            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
         } else if (urlOrValue) {
-             // Toon als normale tekst als het geen link is, maar er is wel een waarde
+            // Toon als normale tekst als het geen link is (voor het geval dat)
             var label = linkAttributes[attrKey];
-            specialLinksHtml += '<p><b>' + label + ':</b> ' + urlOrValue + '</p>';
+            specialLinksHtml += '<p style="margin: 8px 0;"><b>' + label + '</b> ' + urlOrValue + '</p>';
         }
     }
 
@@ -636,7 +646,8 @@ function nodeActive(a) {
 
     // Voeg de Image toe 
     if (imageUrl && (typeof imageUrl === 'string') && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-         nameHtml += "<div><img src=\"" + imageUrl + "\" style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
+         // Voeg een lichte marge toe aan de image container voor ruimte
+         nameHtml += "<div style='margin-bottom: 10px;'><img src=\"" + imageUrl + "\" style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
     } else {
          nameHtml += "<div>";
     }
@@ -656,7 +667,7 @@ function nodeActive(a) {
 
     // 3. Toon de links in de data sectie
     $GP.info_data.html(specialLinksHtml);
-    // *** EINDE FIX: LOGICA VOOR ATTRIBUTEN/LINKS ***
+    // *** EINDE WERKEND BLOK VOOR ATTRIBUTEN/LINKS ***
     
     $GP.info_data.show();
     $GP.info_p.html("Connections:");
