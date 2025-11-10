@@ -200,22 +200,19 @@ function setupGUI(config) {
     config.GP=$GP;
     initSigma(config);
 }
-// Functie om de beschrijvende groepsnaam op te halen uit de 'groupSelectorAttribute' (i.e. attribute 2)
+
 function getGroupName(clusterKey) {
     var nodes = sigInst.clusters[clusterKey];
     if (nodes && nodes.length > 0) {
         var firstNodeId = nodes[0];
         var node = sigInst._core.graph.nodesIndex[firstNodeId];
-        
-        // Haal de attribuutnaam op uit config.json (dit is "attribute 2")
-        var groupAttributeName = config.features.groupSelectorAttribute; 
-        
-        // Geef de waarde van dat attribuut terug
-        if (node.attr.attributes[groupAttributeName]) {
-             return node.attr.attributes[groupAttributeName];
+        if (node.type) {
+             return node.type;
         }
-        // Fallback als het attribuut leeg is
-        return "Onbekende Groep (Attribuut mist)"; 
+        // ----------------------------------
+        
+      
+        return "Onbekende Groep"; 
     }
     return "Geen Leden";
 }
@@ -578,75 +575,63 @@ function nodeActive(a) {
     });
     f = b.attr; 
 
-    // 1. Haal de node Type op (uit de 'Type' kolom)
-    // De 'Type' kolom wordt door Gephi vaak direct op het node-object gezet (b.type).
+    // 1. Haal de node Type op (dit is nu de bron voor de Group Selector en het paneel)
     var nodeType = b.type;
 
-    // 2. Haal de groepsnaam op 
-    // Opmerking: Deze logica werkt alleen als de 'groups' sectie in config.json is toegevoegd (wat niet het geval is in de bijgevoegde config).
-    var groupName = "";
-    var groupMap = config.groups || {};
-    if (groupMap[b.color] && groupMap[b.color].name) {
-        groupName = groupMap[b.color].name;
+    // 2. Definieer de attributen en hun display labels
+    // BELANGRIJK: ZORG DAT DE KEY LINKS (b.v. 'attribute1') OVEREENKOMT MET UW data.json
+    var linkAttributes = {
+        // Gebruik kleine letters, zonder spaties, als dit de opmaak in data.json is!
+        // Als uw JSON 'Attribute 1' (met hoofdletter en spatie) gebruikt, verander de keys dan terug!
+        "attribute1": "Wikidata Item Link",
+        "attribute2": "Wikipedia Link", 
+        "attribute3": "Commons Link",
+        "attribute4": "Image Source Link", 
+        "attribute5": "Wikisource Link"
+    };
+    // Gebruik de imageAttribute uit de config.json
+    var imageAttributeKey = config.informationPanel.imageAttribute || "attribute4"; 
+
+    var specialLinksHtml = ""; // HTML voor alle links
+    var imageUrl = f.attributes[imageAttributeKey];
+    
+    // Loop door de attributen om de links te genereren
+    for (var attrKey in linkAttributes) {
+        // Probeer de waarde uit het attributenobject op te halen
+        var urlOrValue = f.attributes[attrKey];
+        var isLink = urlOrValue && (urlOrValue.startsWith('http://') || urlOrValue.startsWith('https://'));
+
+        if (isLink) {
+            // Toon als klikbare link
+            var label = linkAttributes[attrKey];
+            // Verkort de URL in de linktekst
+            var linkText = urlOrValue.length > 50 ? urlOrValue.substring(0, 50) + '...' : urlOrValue;
+            specialLinksHtml += '<p><b>' + label + ':</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
+        }
     }
 
-    if (f.attributes) {
-        // Definieer de attributen die links zijn, inclusief de labels die u wilt tonen
-        var linkAttributes = {
-            "Attribute 1": "Wikidata Link",
-            "Attribute 2": "Wikipedia Link",
-            "Attribute 3": "Commons Link",
-            "Attribute 4": "Image Source Link", // Wordt ook gebruikt voor de afbeelding
-            "Attribute 5": "Wikisource Link"
-        };
-        var imageAttributeKey = "Attribute 4"; // Komt overeen met de instelling in config.json
+    // 3. Bouw de naam/titel sectie
+    var nameHtml = "";
 
-        var specialLinksHtml = ""; // HTML voor alle links
-        var imageUrl = f.attributes[imageAttributeKey];
-        
-        // Loop door ALLE attributen en maak de links
-        for (var attrKey in f.attributes) {
-            var urlOrValue = f.attributes[attrKey];
-            var isLink = urlOrValue && (urlOrValue.startsWith('http://') || urlOrValue.startsWith('https://'));
-
-            if (linkAttributes.hasOwnProperty(attrKey) && isLink) {
-                // Toon als klikbare link
-                var label = linkAttributes[attrKey];
-                // Gebruik de korte Attribute X naam voor de link tekst, of de URL als deze niet leeg is.
-                var linkText = urlOrValue.length > 50 ? urlOrValue.substring(0, 50) + '...' : urlOrValue;
-                specialLinksHtml += '<p><b>' + label + ':</b> <a href="' + urlOrValue + '" target="_blank">' + linkText + '</a></p>';
-            }
-            // Andere attributen worden genegeerd omdat u alleen de links en het Type wilt zien.
-        }
-
-        // 3. Bouw de naam/titel sectie
-        var nameHtml = "";
-
-        // Voeg de Image toe als deze bestaat en geldig is (op basis van config.json)
-        if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-             nameHtml += "<div><img src=" + imageUrl + " style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
-        } else {
-             nameHtml += "<div>";
-        }
-
-        // Voeg de Node Label toe
-        nameHtml += "<span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>";
-
-        // Voeg de Node Type toe (uit de Type kolom)
-        if (nodeType) {
-            nameHtml += "<p style='margin-top: 5px;'><b>Type:</b> " + nodeType + "</p>";
-        }
-
-        // Voeg de Groepsnaam toe (indien beschikbaar)
-        if (groupName) {
-            nameHtml += "<p style='margin-top: 5px; font-weight: bold; color: " + b.color + ";'>" + groupName + "</p>";
-        }
-        
-        $GP.info_name.html(nameHtml);
-
-        // 4. Toon de links in de data sectie
-        $GP.info_data.html(specialLinksHtml);
+    // Voeg de Image toe (als de URL geldig is)
+    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+         nameHtml += "<div><img src=" + imageUrl + " style=\"vertical-align:middle; max-width: 50px; max-height: 50px; margin-right: 10px;\" />";
+    } else {
+         nameHtml += "<div>";
     }
+
+    // Voeg de Node Label toe
+    nameHtml += "<span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>";
+
+    // Voeg de Node Type toe (uit de Type kolom, zichtbaar onder de naam)
+    if (nodeType) {
+        nameHtml += "<p style='margin-top: 5px;'><b>Type:</b> " + nodeType + "</p>";
+    }
+
+    $GP.info_name.html(nameHtml);
+
+    // 4. Toon de links in de data sectie
+    $GP.info_data.html(specialLinksHtml);
     $GP.info_data.show();
     $GP.info_p.html("Connections:");
     $GP.info.animate({width:'show'},350);
