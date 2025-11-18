@@ -575,10 +575,10 @@ function nodeActive(a) {
         var displayAttributes = [
             { key: 'type', label: 'Type', isLink: false },
             { key: 'specifictype', label: 'Specific Type', isLink: false },
-            { key: 'wikidatarecord', label: 'Wikidata Record', isLink: true },
-            { key: 'wikipediarecord', label: 'Wikipedia Link', isLink: true },
-            { key: 'wikicommonsrecord', label: 'Wikicommons Link', isLink: true },
-            { key: 'imagelink', label: 'Image Link', isLink: true } // Display image link as a link too
+            { key: 'wikidatarecord', label: 'Wikidata Record', isLink: true, displayLabel: 'Wikidata Record' },
+            { key: 'wikipediarecord', label: 'Wikipedia Link', isLink: true, displayLabel: 'Wikipedia Link' },
+            { key: 'wikicommonsrecord', label: 'Wikicommons Link', isLink: true, displayLabel: 'Wikicommons Link' },
+            { key: 'imagelink', label: 'Image Link', isLink: true, displayLabel: 'Image Link' } // Display image link as a link too
         ];
 
         for (var i = 0; i < displayAttributes.length; i++) {
@@ -601,7 +601,8 @@ function nodeActive(a) {
 
         if (image_attribute) {
         	//image_index = jQuery.inArray(image_attribute, temp_array);
-        	$GP.info_name.html("<div><img src=" + f.attributes[image_attribute] + " style=\"max-width: 100%; height: auto; vertical-align:middle;\" /> <span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
+        	// FIX: Set fixed width and height (60px) and use object-fit: cover for thumbnail effect
+        	$GP.info_name.html("<div><img src=" + f.attributes[image_attribute] + " style=\"width: 60px; height: 60px; object-fit: cover; margin-right: 5px; vertical-align:middle;\" /> <span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
         } else {
         	$GP.info_name.html("<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
         }
