@@ -1,0 +1,53 @@
+{
+  "type": "network",
+  "version": "1.0",
+  "data": "data.json",
+  "logo": {
+    "file": "",
+    "link": "",
+    "text": "Jenske Sampson"
+  },
+  "text": {
+    "more": "The nodes show people.\nThe nodes can be further grouped by color. The color represents the kind of relation this person has with Guido Gezelle.\nThe edges show the relations between people.\nThe color represents a specific kind of relation.",
+    "intro": "This is a visualisation of the network of Guido Gezelle. \nThe graph shows people who are connected to Guido Gezelle and to who Guido Gezelle is connected to in Wikidata.",
+    "title": "Network of Guido Gezelle"
+  },
+  "legend": {
+    "edgeLabel": "Relationship",
+    "colorLabel": "See Group Selector",
+    "nodeLabel": "Person"
+  },
+  "features": {
+    "search": true,
+    "groupSelectorAttribute": "specifictype",
+    "hoverBehavior": "dim"
+  },
+  "informationPanel": {
+    "groupByEdgeDirection": true,
+    "imageAttribute": "imagelink"
+  },
+  "sigma": {
+    "drawingProperties": {
+      "defaultEdgeType": "curve",
+      "defaultHoverLabelBGColor": "#002147",
+      "defaultLabelBGColor": "#ddd",
+      "activeFontStyle": "bold",
+      "defaultLabelColor": "#000",
+      "labelThreshold": 10,
+      "defaultLabelHoverColor": "#fff",
+      "fontStyle": "bold",
+      "hoverFontStyle": "bold",
+      "defaultLabelSize": 14
+    },
+    "graphProperties": {
+      "maxEdgeSize": 0.5,
+      "minEdgeSize": 0.2,
+      "minNodeSize": 1,
+      "maxNodeSize": 7
+    },
+    "mouseProperties": {
+      "maxRatio": 20,
+      "minRatio": 0.75
+    }
+  }
+}
