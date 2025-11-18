@@ -9,8 +9,8 @@
   },
   "text": {
     "more": "The nodes show people.\nThe nodes can be further grouped by color. The color represents the kind of relation this person has with Guido Gezelle.\nThe edges show the relations between people.\nThe color represents a specific kind of relation.",
-    "intro": "This is a visualisation of the network of Guido Gezelle. \nThe graph shows people who are connected to Guido Gezelle and to who Guido Gezelle is connected to in Wikidata.",
-    "title": "Network of Guido Gezelle"
+    "intro": "This is a visualisation of the network of Guido Gezelle on Wikidata. \nThe graph shows people who are connected to Guido Gezelle and to who Guido Gezelle is connected to on Wikidata.",
+    "title": "Network of Guido Gezelle on Wikidata"
   },
   "legend": {
     "edgeLabel": "Relationship",
