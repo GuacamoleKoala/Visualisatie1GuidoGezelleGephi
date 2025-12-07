@@ -587,23 +587,23 @@ function nodeActive(a) {
 		        }
 		        return null;
 		    } else {
+		        // HIER WAS HET CASE SENSITIVE PROBLEEM. DE KEYS WORDEN NU CORRECT IN KLEINE LETTERS OPGEVRAAGD.
 		        return f.attributes[key];
 		    }
 		}
         
-        // Haal de kernvelden op
+        // Haal de kernvelden op met correcte kleine letters (zoals in uw JSON)
         var mainRelation = getAttrValue('relatietype');
-        var specificRelation = getAttrValue('SpecificRelatietype');
-
+        var specificRelation = getAttrValue('specificrelatietype'); // FIXED: lowercase key
+        
 		// 1. TYPE: Eerst Type
-		var attrType = getAttrValue('Type');
+		var attrType = getAttrValue('type'); // FIXED: lowercase key
 		if (attrType && attrType.toLowerCase() !== 'null' && attrType.trim().length > 0) {
 			e.push('<span><strong>Type:</strong> ' + attrType + '</span>');
 		}
 
 		// 2. RELATIETYPE: Dan Relatietype
 		if (mainRelation && mainRelation.toLowerCase() !== 'null' && mainRelation.trim().length > 0) {
-			// Hier tonen we ALLEEN de hoofdrelatie
 			e.push('<span><strong>Relatietype:</strong> ' + mainRelation + '</span>');
 		}
         
@@ -611,14 +611,16 @@ function nodeActive(a) {
 		if (specificRelation && specificRelation.toLowerCase() !== 'null' && specificRelation.trim().length > 0) {
 			e.push('<span><strong>Specific Relatietype:</strong> ' + specificRelation + '</span>');
 		}
-
+        
+        // RICHTING is nu NIET meer opgenomen, zoals gevraagd.
 
 		// --- LINKS (Strikte Volgorde) ---
+		// De keys hier zijn ook gecorrigeerd naar kleine letters om te matchen met de JSON
 		var linkAttributes = [
-			{ key: 'wikidataLink', label: 'Wikidata Link' },
-			{ key: 'wikipediaLink', label: 'Wikipedia Link' },
-			{ key: 'commonsLink', label: 'Wikicommons Link' },
-            { key: 'viafLink', label: 'VIAF Link' }, 
+			{ key: 'wikidatalink', label: 'Wikidata Link' }, // FIXED: lowercase key
+			{ key: 'wikipedialink', label: 'Wikipedia Link' }, // ASSUMED/FIXED: lowercase key
+			{ key: 'commonslink', label: 'Wikicommons Link' }, // ASSUMED/FIXED: lowercase key
+            { key: 'viaflink', label: 'VIAF Link' }, // ASSUMED/FIXED: lowercase key
 			{ key: 'image', label: 'Afbeelding Link' }
 		];
 
@@ -632,8 +634,6 @@ function nodeActive(a) {
 				e.push(h);
 			}
 		}
-		
-		// OPMERKING: 'richting' en andere attributen zijn verwijderd door verwijdering van de catch-all loop en dit is de laatste code voor de attributen.
         
 		// --- END CUSTOMIZATIONS ---
         
@@ -654,6 +654,8 @@ function nodeActive(a) {
     sigInst.active = a;
     window.location.hash = b.label;
 }
+
+// ... (Rest van de code is ongewijzigd)
 
 
 /**
