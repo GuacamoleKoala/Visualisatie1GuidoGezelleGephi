@@ -280,7 +280,7 @@ function configSigmaElements(config) {
 		    	n.hidden = 1;
 		  	}else{
 		    	n.hidden = 0;
-		  }
+		  	}
 		}).draw(2,2,2);
 		}).bind('outnodes',function(){
 		sigInst.iterEdges(function(e){
@@ -456,7 +456,10 @@ function nodeNormal() {
     }), sigInst.draw(2, 2, 2, 2), sigInst.neighbors = {}, sigInst.active = !1, $GP.calculating = !1, window.location.hash = "")
 }
 
-//aangepaste nodeActive via Gemini
+
+/**
+ * AANGEPASTE VERSIE VAN nodeActive(a) - STRIKTE VOLGORDE EN ALLEEN GEVRAAGDE ATTRIBUTEN
+ */
 function nodeActive(a) {
 
 	var groupByDirection=false;
@@ -584,9 +587,15 @@ function nodeActive(a) {
 		        }
 		        return null;
 		    } else {
-		        return f.attributes[key];
+		        // Let op: in sommige GEXF-implementaties is f.attributes een array met index 0 of een object direct
+		        // We vertrouwen hier op de meest robuuste check die we eerder maakten:
+                return f.attributes[key];
 		    }
 		}
+        
+        // Haal de kernvelden op
+        var mainRelation = getAttrValue('relatietype');
+        var specificRelation = getAttrValue('SpecificRelatietype');
 
 		// 1. TYPE: Eerst Type
 		var attrType = getAttrValue('Type');
@@ -594,42 +603,25 @@ function nodeActive(a) {
 			e.push('<span><strong>Type:</strong> ' + attrType + '</span>');
 		}
 
-		// 2. RELATIETYPE: Dan Relatietype (met specificatie)
-		var mainRelation = getAttrValue('relatietype');
-		var specificRelation = getAttrValue('SpecificRelatietype');
-
+		// 2. RELATIETYPE: Dan Relatietype
 		if (mainRelation && mainRelation.toLowerCase() !== 'null' && mainRelation.trim().length > 0) {
-			var relationText = mainRelation;
-			
-			// Combineer indien relevant en niet redundant
-			if ((mainRelation === 'relevant persoon' || mainRelation === 'familielid') &&	
-				specificRelation &&	
-				specificRelation.toLowerCase() !== 'null' &&	
-				specificRelation.trim().length > 0 &&	
-				specificRelation !== mainRelation &&	
-				specificRelation !== 'Centrale figuur') {
-				relationText += ' (' + specificRelation + ')';
-			}
-			
-			e.push('<span><strong>Relatietype:</strong> ' + relationText + '</span>');
+			// Hier tonen we ALLEEN de hoofdrelatie, zonder de specificatie tussen haakjes
+			e.push('<span><strong>Relatietype:</strong> ' + mainRelation + '</span>');
 		}
         
-		// 3. SPECIFICRELATIETYPE (Alleen als deze niet in de relatietype-combinatie is opgenomen en de Type/RelatieType logica in 2 faalde)
-        // Omdat de specifieke relatie al in stap 2 is opgenomen, laten we deze apart weg, tenzij je deze per se apart wilt zien.
-        // Omdat je de velden expliciet noemde, zal ik hem hier apart toevoegen, mits hij niet leeg is.
-        // *** LET OP: Als stap 2 succesvol was, wordt dit veld mogelijk herhaald of redundant. ***
-        if (specificRelation && specificRelation.toLowerCase() !== 'null' && specificRelation.trim().length > 0 && specificRelation !== mainRelation) {
-             // We voegen het alleen toe als het NIET dezelfde is als de hoofdrelatie (anders is het dubbelop)
-             e.push('<span><strong>Specific Relatietype:</strong> ' + specificRelation + '</span>');
-        }
+		// 3. SPECIFICRELATIETYPE: Dan Specific Relatietype
+		if (specificRelation && specificRelation.toLowerCase() !== 'null' && specificRelation.trim().length > 0) {
+            // We tonen deze apart, ongeacht of deze gelijk is aan de hoofdrelatie (voor strikte volgorde)
+			e.push('<span><strong>Specific Relatietype:</strong> ' + specificRelation + '</span>');
+		}
 
 
-		// --- LINKS ---
-        // We tonen nu alleen de gevraagde links: wikidataLink, wikipediaLink, commonsLink, image
+		// --- LINKS (Strikte Volgorde) ---
 		var linkAttributes = [
 			{ key: 'wikidataLink', label: 'Wikidata Link' },
 			{ key: 'wikipediaLink', label: 'Wikipedia Link' },
 			{ key: 'commonsLink', label: 'Wikicommons Link' },
+            { key: 'viafLink', label: 'VIAF Link' }, // TOEGEVOEGD
 			{ key: 'image', label: 'Afbeelding Link' }
 		];
 
@@ -644,15 +636,8 @@ function nodeActive(a) {
 			}
 		}
 		
-		// 4. RICHTING: (Optioneel maar belangrijk voor groepering, dus laten we hem erin)
-		var attrRichting = getAttrValue('richting');
-		if (attrRichting && attrRichting.toLowerCase() !== 'null' && attrRichting.trim().length > 0) {
-			e.push('<span><strong>Richting:</strong> ' + attrRichting + '</span>');
-		}
-
-		// *** OPMERKING: De 'CATCH-ALL' lus voor alle andere attributen is verwijderd, 
-		//    zodat alleen de hierboven gespecificeerde attributen zichtbaar zijn. ***
-		
+		// OPMERKING: 'richting' en andere attributen zijn verwijderd.
+        
 		// --- END CUSTOMIZATIONS ---
         
 		var imageValue = getAttrValue(image_attribute);
