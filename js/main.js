@@ -456,10 +456,7 @@ function nodeNormal() {
     }), sigInst.draw(2, 2, 2, 2), sigInst.neighbors = {}, sigInst.active = !1, $GP.calculating = !1, window.location.hash = "")
 }
 
-
-/**
- * AANGEPASTE VERSIE VAN nodeActive(a) - INCLUSIEF GROUP BY DIRECTION EN UITGEBREIDE ATTRIBUUT WEERGAVE
- */
+//aangepaste nodeActive via Gemini
 function nodeActive(a) {
 
 	var groupByDirection=false;
@@ -576,13 +573,8 @@ function nodeActive(a) {
 		
 		// --- START CUSTOMIZATIONS (Aangepaste attributen weergave) ---
 		var e = [];
-		// Zoek de attributen in het juiste formaat (array of object)
-        var attrs = f.attributes.attributes || f.attributes; // Pas aan voor zowel de array- als objectstructuur
-
-		// Lijst van sleutels die we specifiek behandelen of willen uitsluiten van de generieke 'catch-all' lus
-		var excludedKeys = ['Type', 'relatietype', 'SpecificRelatietype', 'richting', 'wikidataLink', 'wikipediaLink', 'commonsLink', 'image', 'bioPortaalLink', 'viafLink'];
-
-		// Functie om de waarde op te halen, onafhankelijk van de structuur (array of object)
+        
+        // Functie om de waarde op te halen, onafhankelijk van de GEXF-structuur
 		var getAttrValue = function(key) {
 		    if (Array.isArray(f.attributes)) {
 		        for (var i = 0; i < f.attributes.length; i++) {
@@ -596,46 +588,49 @@ function nodeActive(a) {
 		    }
 		}
 
-		// 1. Display General Type (e.g., Persoon)
+		// 1. TYPE: Eerst Type
 		var attrType = getAttrValue('Type');
 		if (attrType && attrType.toLowerCase() !== 'null' && attrType.trim().length > 0) {
 			e.push('<span><strong>Type:</strong> ' + attrType + '</span>');
 		}
 
-		// 2. Display Relation Type, with deeper specification if applicable
+		// 2. RELATIETYPE: Dan Relatietype (met specificatie)
 		var mainRelation = getAttrValue('relatietype');
 		var specificRelation = getAttrValue('SpecificRelatietype');
 
 		if (mainRelation && mainRelation.toLowerCase() !== 'null' && mainRelation.trim().length > 0) {
 			var relationText = mainRelation;
 			
-			// Controleer op 'relevant persoon' of 'familielid' EN of de specificatie verschilt van de hoofdrelatie of 'Centrale figuur'
+			// Combineer indien relevant en niet redundant
 			if ((mainRelation === 'relevant persoon' || mainRelation === 'familielid') &&	
 				specificRelation &&	
 				specificRelation.toLowerCase() !== 'null' &&	
 				specificRelation.trim().length > 0 &&	
 				specificRelation !== mainRelation &&	
 				specificRelation !== 'Centrale figuur') {
-				relationText += ' (' + specificRelation + ')'; // Dit voegt de specificatie tussen haakjes toe
+				relationText += ' (' + specificRelation + ')';
 			}
 			
 			e.push('<span><strong>Relatietype:</strong> ' + relationText + '</span>');
 		}
+        
+		// 3. SPECIFICRELATIETYPE (Alleen als deze niet in de relatietype-combinatie is opgenomen en de Type/RelatieType logica in 2 faalde)
+        // Omdat de specifieke relatie al in stap 2 is opgenomen, laten we deze apart weg, tenzij je deze per se apart wilt zien.
+        // Omdat je de velden expliciet noemde, zal ik hem hier apart toevoegen, mits hij niet leeg is.
+        // *** LET OP: Als stap 2 succesvol was, wordt dit veld mogelijk herhaald of redundant. ***
+        if (specificRelation && specificRelation.toLowerCase() !== 'null' && specificRelation.trim().length > 0 && specificRelation !== mainRelation) {
+             // We voegen het alleen toe als het NIET dezelfde is als de hoofdrelatie (anders is het dubbelop)
+             e.push('<span><strong>Specific Relatietype:</strong> ' + specificRelation + '</span>');
+        }
 
-		// 3. Display Richting
-		var attrRichting = getAttrValue('richting');
-		if (attrRichting && attrRichting.toLowerCase() !== 'null' && attrRichting.trim().length > 0) {
-			e.push('<span><strong>Richting:</strong> ' + attrRichting + '</span>');
-		}
 
-		// --- Link Attributes (Alle URL's) ---
+		// --- LINKS ---
+        // We tonen nu alleen de gevraagde links: wikidataLink, wikipediaLink, commonsLink, image
 		var linkAttributes = [
 			{ key: 'wikidataLink', label: 'Wikidata Link' },
 			{ key: 'wikipediaLink', label: 'Wikipedia Link' },
 			{ key: 'commonsLink', label: 'Wikicommons Link' },
-			{ key: 'image', label: 'Afbeelding Link' },	
-			{ key: 'viafLink', label: 'VIAF Link' },
-			{ key: 'bioPortaalLink', label: 'Bioportàal Link' }
+			{ key: 'image', label: 'Afbeelding Link' }
 		];
 
 		for (var i = 0; i < linkAttributes.length; i++) {
@@ -643,36 +638,25 @@ function nodeActive(a) {
 			var linkKey = attrConfig.key;
 			var linkValue = getAttrValue(linkKey);
 
-			// Controle: toon de link ALLEEN als er een geldige waarde is
 			if (linkValue && linkValue.toLowerCase() !== 'null' && linkValue.trim().length > 0) {
-				// Zorg ervoor dat de link klikbaar is en in een nieuw venster opent
 				var h = '<span><strong>' + attrConfig.label + ':</strong> <a href="' + linkValue + '" target="_blank">' + linkValue + '</a></span>';
 				e.push(h);
 			}
 		}
 		
-		// 4. CATCH-ALL: Toon andere niet-standaard attributen
-		// Dit deel moet rekening houden met de GEXF-structuur (f.attributes kan een array zijn van {attr:key, val:value})
-		var keysToIterate = Array.isArray(f.attributes) ? f.attributes : Object.keys(f.attributes);
-
-		for (var i = 0; i < keysToIterate.length; i++) {
-		    var item = keysToIterate[i];
-		    var key = Array.isArray(f.attributes) ? item.attr : item;
-		    var val = Array.isArray(f.attributes) ? item.val : f.attributes[key];
-
-			if (excludedKeys.indexOf(key) === -1) {
-				if (val && val.toLowerCase() !== 'null' && val.trim().length > 0) {
-					// Maak de sleutel leesbaar (bijv. "nonstandard_attribute" -> "Nonstandard Attribute")
-					var displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-					e.push('<span><strong>' + displayKey + ':</strong> ' + val + '</span>');
-				}
-			}
+		// 4. RICHTING: (Optioneel maar belangrijk voor groepering, dus laten we hem erin)
+		var attrRichting = getAttrValue('richting');
+		if (attrRichting && attrRichting.toLowerCase() !== 'null' && attrRichting.trim().length > 0) {
+			e.push('<span><strong>Richting:</strong> ' + attrRichting + '</span>');
 		}
+
+		// *** OPMERKING: De 'CATCH-ALL' lus voor alle andere attributen is verwijderd, 
+		//    zodat alleen de hierboven gespecificeerde attributen zichtbaar zijn. ***
+		
 		// --- END CUSTOMIZATIONS ---
         
-		if (image_attribute) {
-			// Zorg ervoor dat de waarde correct wordt opgehaald, ongeacht de attributenstructuur
-            var imageValue = getAttrValue(image_attribute);
+		var imageValue = getAttrValue(image_attribute);
+		if (image_attribute && imageValue) {
 			$GP.info_name.html("<div><img src=" + imageValue + " style=\"vertical-align:middle; max-height:60px; max-width:60px; margin-right: 10px;\" /> <span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
 		} else {
 			$GP.info_name.html("<div><span onmouseover=\"sigInst._core.plotter.drawHoverNode(sigInst._core.graph.nodesIndex['" + b.id + '\'])" onmouseout="sigInst.refresh()">' + b.label + "</span></div>");
