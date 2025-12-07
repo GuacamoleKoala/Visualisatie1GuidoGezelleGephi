@@ -587,9 +587,7 @@ function nodeActive(a) {
 		        }
 		        return null;
 		    } else {
-		        // Let op: in sommige GEXF-implementaties is f.attributes een array met index 0 of een object direct
-		        // We vertrouwen hier op de meest robuuste check die we eerder maakten:
-                return f.attributes[key];
+		        return f.attributes[key];
 		    }
 		}
         
@@ -605,13 +603,12 @@ function nodeActive(a) {
 
 		// 2. RELATIETYPE: Dan Relatietype
 		if (mainRelation && mainRelation.toLowerCase() !== 'null' && mainRelation.trim().length > 0) {
-			// Hier tonen we ALLEEN de hoofdrelatie, zonder de specificatie tussen haakjes
+			// Hier tonen we ALLEEN de hoofdrelatie
 			e.push('<span><strong>Relatietype:</strong> ' + mainRelation + '</span>');
 		}
         
 		// 3. SPECIFICRELATIETYPE: Dan Specific Relatietype
 		if (specificRelation && specificRelation.toLowerCase() !== 'null' && specificRelation.trim().length > 0) {
-            // We tonen deze apart, ongeacht of deze gelijk is aan de hoofdrelatie (voor strikte volgorde)
 			e.push('<span><strong>Specific Relatietype:</strong> ' + specificRelation + '</span>');
 		}
 
@@ -621,7 +618,7 @@ function nodeActive(a) {
 			{ key: 'wikidataLink', label: 'Wikidata Link' },
 			{ key: 'wikipediaLink', label: 'Wikipedia Link' },
 			{ key: 'commonsLink', label: 'Wikicommons Link' },
-            { key: 'viafLink', label: 'VIAF Link' }, // TOEGEVOEGD
+            { key: 'viafLink', label: 'VIAF Link' }, 
 			{ key: 'image', label: 'Afbeelding Link' }
 		];
 
@@ -636,7 +633,7 @@ function nodeActive(a) {
 			}
 		}
 		
-		// OPMERKING: 'richting' en andere attributen zijn verwijderd.
+		// OPMERKING: 'richting' en andere attributen zijn verwijderd door verwijdering van de catch-all loop en dit is de laatste code voor de attributen.
         
 		// --- END CUSTOMIZATIONS ---
         
